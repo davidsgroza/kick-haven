@@ -4,11 +4,11 @@ import { connectToDatabase } from "@/utils/mongo";
 import { z } from "zod";
 
 const registerSchema = z.object({
-  username: z.string().min(3).max(50),
+  username: z.string().min(5).max(20),
   email: z.string().email(),
   emailConfirm: z.string().email(),
-  password: z.string().min(8).max(128),
-  passwordConfirm: z.string().min(8).max(128),
+  password: z.string().min(8).max(64),
+  passwordConfirm: z.string().min(8).max(64),
   termsAndConditions: z
     .boolean()
     .refine((val) => val === true, "Terms and conditions must be accepted"),
@@ -18,6 +18,14 @@ export async function POST(request: Request) {
   try {
     const requestBody = await request.json();
     const parsedData = registerSchema.parse(requestBody);
+
+    // Check if termsAndConditions is accepted before parsing the request body
+    if (!requestBody.termsAndConditions) {
+      return NextResponse.json(
+        { message: "Terms and conditions must be accepted" },
+        { status: 400 }
+      );
+    }
 
     if (parsedData.email !== parsedData.emailConfirm) {
       return NextResponse.json(
@@ -36,11 +44,22 @@ export async function POST(request: Request) {
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
 
+    // Check if the user with this username already exists
+    const userByUsername = await db
+      .collection("users")
+      .findOne({ username: parsedData.username });
+    if (userByUsername) {
+      return NextResponse.json(
+        { message: " Warning: Username is already taken!" },
+        { status: 400 }
+      );
+    }
+
     // Check if the user with this email address already exists
-    const user = await db
+    const userByEmail = await db
       .collection("users")
       .findOne({ email: parsedData.email });
-    if (user) {
+    if (userByEmail) {
       return NextResponse.json(
         { message: " Warning: E-Mail is already registered!" },
         { status: 400 }
@@ -55,6 +74,7 @@ export async function POST(request: Request) {
       username: parsedData.username,
       email: parsedData.email,
       password: hashedPassword,
+      termsAndConditionsAccepted: parsedData.termsAndConditions,
     });
 
     // Return success response
@@ -62,17 +82,19 @@ export async function POST(request: Request) {
       success: true,
       message: "User registered successfully",
     });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { message: "Invalid request body" },
-        { status: 400 }
-      );
-    } else {
-      return NextResponse.json(
-        { message: "An error occurred during registration" },
-        { status: 500 }
-      );
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message.includes("termsAndConditions")) {
+        return NextResponse.json(
+          { message: "Terms and conditions must be accepted" },
+          { status: 400 }
+        );
+      } else {
+        return NextResponse.json(
+          { message: "An error occurred during registration" },
+          { status: 500 }
+        );
+      }
     }
   }
 }
