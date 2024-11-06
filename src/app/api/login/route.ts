@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
     const client = await connectToDatabase();
-    const db = client.db("kick-haven");
+    const db = client.db("kick-haven-local");
 
     // Find the user by email
     const user = await db.collection("users").findOne({ email });
