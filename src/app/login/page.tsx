@@ -25,11 +25,6 @@ export default function LoginPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long");
-      return;
-    }
-
     // Login request
     const loginResponse = await fetch("/api/login", {
       method: "POST",
@@ -49,9 +44,6 @@ export default function LoginPage() {
     } else {
       // Alert on successful login
       alert(loginData.message || "Logged in successfully");
-      // Optionally, redirect or clear the form
-      setEmail("");
-      setPassword("");
       // Redirect to the main page
       router.push("/"); // This will navigate to the main page (home)
     }
@@ -61,34 +53,69 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-4"
+        className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-4 w-full max-w-xl"
       >
         <h1 className="text-2xl font-semibold">Login</h1>
         {error && <p className="text-red-500">{error}</p>}{" "}
         {/* Display error message */}
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full p-2 rounded-lg bg-gray-700"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full p-2 rounded-lg bg-gray-700"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <p>
+          By continuing, you agree to our{" "}
+          <Link href="/register" className="text-blue-400 hover:text-blue-600">
+            User Agreement
+          </Link>
+          .
+        </p>
+        <hr className="border-gray-600 my-4" />
+        <div className="mb-4">
+          <div className="flex justify-between">
+            <label className="text-lg font-medium text-white" htmlFor="email">
+              E-Mail:
+            </label>
+            <input
+              type="email"
+              id="email"
+              placeholder="Email"
+              className="bg-gray-700 text-gray-200 w-3/4 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="mb-4">
+          <div className="flex justify-between">
+            <label
+              className="text-lg font-medium text-white"
+              htmlFor="password"
+            >
+              Password:
+            </label>
+            <input
+              type="password"
+              id="password"
+              placeholder="Password"
+              className="bg-gray-700 text-gray-200 w-3/4 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+        </div>
+        <hr className="border-gray-600 my-4" />
         <button
           type="submit"
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="w-full p-2 bg-blue-500 rounded-lg hover:bg-blue-700 active:bg-blue-900 transition duration-200"
         >
           Login
         </button>
+        <hr className="border-gray-600 my-4" />
+        <p>
+          {" "}
+          <Link href="/register" className="text-blue-400 hover:text-blue-600">
+            Forgot password?
+          </Link>
+        </p>
         <p>
           Do not have an account?{" "}
-          <Link href="/register" className="text-blue-500 hover:text-blue-700">
+          <Link href="/register" className="text-blue-400 hover:text-blue-600">
             Register here
           </Link>
         </p>

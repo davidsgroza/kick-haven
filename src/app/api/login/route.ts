@@ -1,21 +1,9 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { connectToDatabase } from "@/utils/mongo";
-//import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import cookie from "cookie";
 import { authenticateRequest } from "./middleware"; // Import the middleware
-
-//const registerSchema = z.object({
-//  username: z.string().min(5).max(20),
-//  email: z.string().email(),
-//  emailConfirm: z.string().email(),
-//  password: z.string().min(8).max(64),
-//  passwordConfirm: z.string().min(8).max(64),
-//  termsAndConditions: z
-//    .boolean()
-//    .refine((val) => val === true, "Terms and conditions must be accepted"),
-//});
 
 export async function POST(request: Request) {
   try {
@@ -40,7 +28,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate a unique session ID
+    // After a successful login generate a unique session ID
     const sessionId = await generateSessionId();
 
     // Store the session ID in the database
@@ -69,7 +57,7 @@ async function generateSessionId() {
 }
 
 async function setCookie(sessionId: string) {
-  // Set a cookie with the session ID using a library like cookie
+  // Set a cookie with the session ID using a cookie
   return cookie.serialize("session_id", sessionId, {
     httpOnly: true,
     secure: true,

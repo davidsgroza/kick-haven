@@ -3,8 +3,8 @@ import localFont from "next/font/local";
 import React from "react";
 import Link from "next/link";
 import "./globals.css";
+import { cookies } from "next/headers";
 
-// Load fonts
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -16,18 +16,33 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-// Metadata for the application
 export const metadata: Metadata = {
   title: "kickHaven",
   description: "A forum for music fans",
 };
 
-// Main Layout Component
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = cookies();
+  const sessionId = (await cookieStore).get("session_id")?.value;
+
+  let isLoggedIn = false;
+  if (sessionId) {
+    const response = await fetch("/api/login", {
+      headers: {
+        Cookie: `session_id=${sessionId}`,
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      isLoggedIn = data.authenticated;
+    }
+  }
+
   return (
     <html lang="en">
       <body
@@ -43,19 +58,26 @@ export default function RootLayout({
                   src="/icon.jpg"
                   alt="kickHaven Icon"
                   className="h-8 w-8 mr-2"
-                />{" "}
-                {/* Adjust size and margin */}
+                />
                 <Link href="/" className="text-lg font-bold">
                   kickHaven
                 </Link>
               </div>
               <div>
-                <Link href="/login" className="mx-2">
-                  Login
-                </Link>
-                <Link href="/register" className="mx-2">
-                  Register
-                </Link>
+                {isLoggedIn ? (
+                  <Link href="/account" className="mx-2">
+                    My Account
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/login" className="mx-2">
+                      Login
+                    </Link>
+                    <Link href="/register" className="mx-2">
+                      Register
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </nav>
