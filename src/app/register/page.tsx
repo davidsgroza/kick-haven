@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 
 /**
  * Page for registering a new user.
@@ -119,11 +120,19 @@ const RegisterPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        console.log("Registration successful");
-        alert("User registered successfully!"); // Add this line to display a popup message
-        router.push("/"); // Redirect to the homepage
+        // Automatically log the user in after registration
+        const signInResponse = await signIn("credentials", {
+          redirect: false,
+          username,
+          password,
+        });
+
+        if (signInResponse?.ok) {
+          router.push("/"); // Redirect to the homepage after successful sign-in
+        } else {
+          alert("Sign-in after registration failed.");
+        }
       } else {
-        console.log("Registration failed:", data.message);
         alert(data.message); // Display the error message
       }
     } catch (error) {

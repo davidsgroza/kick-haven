@@ -3,12 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn, useSession } from "next-auth/react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
+
+  const { data: session, status } = useSession();
+
+  if (status === "authenticated") {
+    console.log("User is authenticated:", session);
+    router.push("/");
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,27 +34,17 @@ export default function LoginPage() {
       return;
     }
 
-    // Login request
-    const loginResponse = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+    // Login request using Next-Auth
+    const result = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
     });
 
-    const loginData = await loginResponse.json();
-
-    if (!loginResponse.ok) {
-      // If the response is not ok, show the error message
-      if (loginData.message === "No match for E-Mail Address and/or Password") {
-        setError("Invalid email or password");
-      } else {
-        setError(loginData.message);
-      }
-    } else {
-      // Alert on successful login
-      alert(loginData.message || "Logged in successfully");
-      // Redirect to the main page
-      router.push("/"); // This will navigate to the main page (home)
+    if (result && result.error) {
+      setError(result.error);
+    } else if (result) {
+      router.push("/");
     }
   };
 
