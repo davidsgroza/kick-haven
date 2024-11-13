@@ -277,7 +277,10 @@ const RegisterPage = () => {
                 className="mr-2"
               />
               I have read and agree to the{" "}
-              <Link href="/" className="text-blue-400 hover:text-blue-600">
+              <Link
+                href="/terms-and-conditions"
+                className="text-blue-400 hover:text-blue-600"
+              >
                 Terms and Conditions
               </Link>
             </label>

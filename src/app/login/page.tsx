@@ -6,9 +6,9 @@ import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const { data: session, status } = useSession();
@@ -24,21 +24,16 @@ export default function LoginPage() {
     setError(""); // Reset error before making a request
 
     // Field validations
-    if (!email || !password) {
+    if (!username || !password) {
       setError("Please fill in all fields");
-      return;
-    }
-
-    if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email)) {
-      setError("Invalid email address");
       return;
     }
 
     // Login request using Next-Auth
     const result = await signIn("credentials", {
-      redirect: false,
-      email,
+      username,
       password,
+      redirect: false,
     });
 
     if (result && result.error) {
@@ -59,7 +54,10 @@ export default function LoginPage() {
         {/* Display error message */}
         <p>
           By continuing, you agree to our{" "}
-          <Link href="/register" className="text-blue-400 hover:text-blue-600">
+          <Link
+            href="/terms-and-conditions"
+            className="text-blue-400 hover:text-blue-600"
+          >
             User Agreement
           </Link>
           .
@@ -67,16 +65,19 @@ export default function LoginPage() {
         <hr className="border-gray-600 my-4" />
         <div className="mb-4">
           <div className="flex justify-between">
-            <label className="text-lg font-medium text-white" htmlFor="email">
-              E-Mail:
+            <label
+              className="text-lg font-medium text-white"
+              htmlFor="username"
+            >
+              Username:
             </label>
             <input
-              type="email"
-              id="email"
-              placeholder="E-Mail"
+              type="username"
+              id="username"
+              placeholder="Username"
               className="bg-gray-700 text-gray-200 w-3/4 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
             />
           </div>
         </div>
