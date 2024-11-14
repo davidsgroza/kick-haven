@@ -23,7 +23,7 @@ export default function LoginPage() {
   if (session && !successMessage) {
     // Redirect logged-in users to the dashboard instantly
     router.push("/dashboard");
-    return null;
+    return;
   } else {
     // Handle login form submission
     const handleSubmit = async (e: React.FormEvent) => {
@@ -79,9 +79,18 @@ export default function LoginPage() {
         >
           <h1 className="text-2xl font-semibold">Login</h1>
           {/* Display error message */}
-          {error && <p className="text-red-500">{error}</p>}
+          {error && (
+            <div className="mb-6 p-4 bg-red-500 text-white rounded-lg">
+              <p>{error}</p>
+            </div>
+          )}
+
           {/* Display success message */}
-          {successMessage && <p className="text-green-500">{successMessage}</p>}
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-500 text-white rounded-lg">
+              <p>{successMessage}</p>
+            </div>
+          )}
           <p>
             By continuing, you agree to our{" "}
             <Link

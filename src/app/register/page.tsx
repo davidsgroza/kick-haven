@@ -30,7 +30,7 @@ const RegisterPage = () => {
   if (session && !successMessage) {
     // Redirect logged-in users to the dashboard instantly
     router.push("/dashboard");
-    return null;
+    return;
   } else {
     // Form errors
     interface FormErrors {
@@ -127,7 +127,7 @@ const RegisterPage = () => {
             // Redirect to the dashboard after a delay
             setTimeout(() => {
               router.push("/dashboard");
-            }, 10000); // Timer
+            }, 3000); // Timer
           } else {
             alert("Sign-in after registration failed.");
           }

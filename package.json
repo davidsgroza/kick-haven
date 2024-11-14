@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.1.5",
     "bcryptjs": "^2.4.3",
     "cookie": "^1.0.1",
     "install": "^0.13.0",
