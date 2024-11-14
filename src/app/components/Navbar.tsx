@@ -1,26 +1,29 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react"; // Import useSession and signOut
+import { useSession, signOut } from "next-auth/react";
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 
 function Navbar() {
-  const { data: session } = useSession(); // Use session to check if the user is logged in
+  const { data: session } = useSession(); // To check if the user is logged in
 
   return (
     <nav className="bg-blue-700 p-4">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center">
-          {/* The logo doesn't react to hover and click states */}
-          <Image
-            src="/icon.jpg"
-            alt="kickHaven Icon"
-            width={32}
-            height={32}
-            className="mr-2"
-          />
-          <Link href="/" className="text-lg font-bold text-white">
+          <Link
+            href="/"
+            className="flex items-center text-lg font-bold text-white"
+          >
+            {/* The logo */}
+            <Image
+              src="/icon.jpg"
+              alt="kickHaven Icon"
+              width={50}
+              height={50}
+              className="rounded-lg mr-2"
+            />
             kickHaven
           </Link>
         </div>
@@ -30,29 +33,29 @@ function Navbar() {
             <>
               <Link
                 href="/login"
-                className="mx-2 text-white hover:text-blue-300 active:text-blue-500 focus:text-blue-400"
+                className="mx-2 text-white hover:text-white bg-blue-800 hover:bg-blue-600 px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className="mx-2 text-white hover:text-blue-300 active:text-blue-500 focus:text-blue-400"
+                className="mx-2 text-white hover:text-white bg-blue-800 hover:bg-blue-600 px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 Register
               </Link>
             </>
           ) : (
             <>
-              {/* Show My Account and Logout when the user is authenticated */}
+              {/* Show Dashboard and Logout when the user is authenticated */}
               <Link
-                href="/account"
-                className="mx-2 text-white hover:text-blue-300 active:text-blue-500 focus:text-blue-400"
+                href="/dashboard"
+                className="mx-2 text-white hover:text-white bg-blue-800 hover:bg-blue-600 px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
-                My Account
+                Dashboard
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="mx-2 text-red-500 hover:text-red-400 active:text-red-700 focus:text-red-600"
+                className="mx-2 text-red-500 hover:text-red-300 bg-blue-800 hover:bg-red-600 px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-red-300"
               >
                 Logout
               </button>

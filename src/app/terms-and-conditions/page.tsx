@@ -12,7 +12,7 @@ const TermsAndConditionsPage = () => {
   const router = useRouter();
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+    <main className="min-h-screen flex items-center justify-center my-12 bg-gray-900 text-white">
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-4xl">
         <h1 className="text-2xl font-semibold mb-4">Terms and Conditions</h1>
         <hr className="border-gray-600 my-4" />
@@ -180,7 +180,7 @@ const TermsAndConditionsPage = () => {
           <div className="mt-4 text-center">
             <button
               onClick={() => router.push("/")}
-              className="w-full p-2 bg-blue-500 rounded-lg hover:bg-blue-700 active:bg-blue-900 transition duration-200"
+              className="w-full p-2 text-white hover:text-white bg-blue-500 rounded-lg hover:bg-blue-700 active:bg-blue-900 transition duration-200"
             >
               Back to Homepage
             </button>
