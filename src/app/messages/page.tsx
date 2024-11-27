@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Sidebar from "../components/Sidebar"; // Import Sidebar component
 
 const MessagesPage = () => {
   const router = useRouter();
@@ -52,33 +53,41 @@ const MessagesPage = () => {
   }
 
   return (
-    <main className="min-h-screen bg-gray-900 text-white p-10">
-      <h1 className="text-4xl font-semibold mb-8">Messages</h1>
+    <main className="min-h-screen bg-gray-900 text-white flex justify-center py-10">
+      <div className="w-full max-w-4xl flex gap-8">
+        {/* Left side (Main Content) */}
+        <div className="flex-1 bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
+          <h1 className="text-4xl font-semibold mb-8">Messages</h1>
 
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-4">
-        <h2 className="text-2xl font-semibold mb-6">Conversations</h2>
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-4">
+            <h2 className="text-2xl font-semibold mb-6">Conversations</h2>
 
-        <div className="space-y-4">
-          {conversations.map((conversation) => (
-            <div
-              key={conversation.id}
-              className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
-            >
-              <Link
-                href={`/messages/${conversation.id}`} // Link to individual message page
-                className="block"
-              >
-                <h3 className="text-lg font-medium text-blue-400 hover:underline">
-                  {conversation.sender}
-                </h3>
-                <p className="text-gray-300 mt-1 truncate">
-                  {conversation.lastMessage}
-                </p>
-                <small className="text-gray-400">{conversation.date}</small>
-              </Link>
+            <div className="space-y-4">
+              {conversations.map((conversation) => (
+                <div
+                  key={conversation.id}
+                  className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
+                >
+                  <Link
+                    href={`/messages/${conversation.id}`} // Link to individual message page
+                    className="block"
+                  >
+                    <h3 className="text-lg font-medium text-blue-400 hover:underline">
+                      {conversation.sender}
+                    </h3>
+                    <p className="text-gray-300 mt-1 truncate">
+                      {conversation.lastMessage}
+                    </p>
+                    <small className="text-gray-400">{conversation.date}</small>
+                  </Link>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
+
+        {/* Right side (Sidebar) */}
+        <Sidebar />
       </div>
     </main>
   );

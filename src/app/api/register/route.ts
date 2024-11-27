@@ -17,6 +17,20 @@ export async function POST(request: Request) {
     const requestBody = await request.json();
     const parsedData = registerSchema.parse(requestBody);
 
+    // Validate that the email and username match their confirmations
+    if (parsedData.email !== parsedData.emailConfirm) {
+      return NextResponse.json(
+        { message: "Emails do not match" },
+        { status: 400 }
+      );
+    }
+    if (parsedData.password !== parsedData.passwordConfirm) {
+      return NextResponse.json(
+        { message: "Passwords do not match" },
+        { status: 400 }
+      );
+    }
+
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
 
@@ -34,11 +48,15 @@ export async function POST(request: Request) {
     // Hash the password
     const hashedPassword = await bcrypt.hash(parsedData.password, 10);
 
-    // Insert the new user
+    // Insert the new user in database
+    const now = new Date();
     await db.collection("users").insertOne({
       username: parsedData.username,
       email: parsedData.email,
       password: hashedPassword,
+      role: "user", // Default role
+      createdAt: now,
+      updatedAt: now,
     });
 
     return NextResponse.json({ success: true });

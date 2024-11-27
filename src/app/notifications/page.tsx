@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Sidebar from "../components/Sidebar"; // Import Sidebar component
 
 const NotificationsPage = () => {
   const router = useRouter();
@@ -51,24 +52,34 @@ const NotificationsPage = () => {
   }
 
   return (
-    <main className="min-h-screen bg-gray-900 text-white p-10">
-      <h1 className="text-4xl font-semibold mb-8">Notifications</h1>
+    <main className="min-h-screen bg-gray-900 text-white flex justify-center py-10">
+      <div className="w-full max-w-4xl flex gap-8">
+        {/* Left side (Main Content) */}
+        <div className="flex-1 bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
+          <h1 className="text-4xl font-semibold mb-8">Notifications</h1>
 
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-4">
-        <h2 className="text-2xl font-semibold mb-6">Recent Notifications</h2>
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-4">
+            <h2 className="text-2xl font-semibold mb-6">
+              Recent Notifications
+            </h2>
 
-        <div className="space-y-4">
-          {notifications.map((notification) => (
-            <div
-              key={notification.id}
-              className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
-            >
-              <p className="font-semibold">{notification.type}</p>
-              <p className="text-gray-300 mt-1">{notification.content}</p>
-              <small className="text-gray-400">{notification.date}</small>
+            <div className="space-y-4">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
+                >
+                  <p className="font-semibold">{notification.type}</p>
+                  <p className="text-gray-300 mt-1">{notification.content}</p>
+                  <small className="text-gray-400">{notification.date}</small>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
+
+        {/* Right side (Sidebar) */}
+        <Sidebar />
       </div>
     </main>
   );
