@@ -9,13 +9,13 @@ const ProfileInfoPage = () => {
   const { data: session, status } = useSession();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Form state for profile information
+  // Form for profile information
   const [formData, setFormData] = useState({
     bio: "",
     location: "",
     birthdate: "",
     email: "",
-    username: session?.user?.name || "",
+    username: "",
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -23,15 +23,47 @@ const ProfileInfoPage = () => {
   useEffect(() => {
     if (status === "loading") return;
 
-    if (!session) {
+    if (!session?.user) {
       router.push("/login");
     } else {
       setIsAuthenticated(true);
-      setFormData((prevData) => ({
-        ...prevData,
-        email: session.user?.email || "",
-        username: session.user?.name || "",
-      }));
+
+      // Fetch the user's profile info from the API
+      const fetchUserProfile = async () => {
+        // Ensure session is loaded and user exists
+        if (!session || !session.user) {
+          setError("User not authenticated.");
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/profile-info", {
+            method: "GET",
+            headers: {
+              // Assuming session.user.name is being passed, or if you're using email, pass session.user.email
+              Authorization: `Bearer ${session.user.name || ""}`, // Adjust as per your session object
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch profile data.");
+          }
+
+          const data = await response.json();
+          setFormData({
+            bio: data.bio || "",
+            location: data.location || "",
+            birthdate: data.birthdate || "",
+            email: data.email || "",
+            username: data.username || "",
+          });
+        } catch (err) {
+          console.error(err);
+          setError("Failed to load user profile data.");
+        }
+      };
+
+      fetchUserProfile();
     }
   }, [session, status, router]);
 
@@ -39,7 +71,7 @@ const ProfileInfoPage = () => {
     return <div>Loading...</div>;
   }
 
-  if (!isAuthenticated || !session?.user?.name) {
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -53,40 +85,59 @@ const ProfileInfoPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate form data if needed (e.g., validate email format)
-    if (!formData.username || !formData.email) {
-      setError("Please fill out all required fields.");
+    // Clear any previous errors
+    setError(null);
+
+    // Ensure session exists before submitting
+    if (!session?.user) {
+      setError("User session is not available.");
       return;
     }
 
-    setError(null);
+    // Prepare data for submission
+    const updatedData = {
+      ...formData,
+      currentUsername: session.user?.name || "", // Safely access session username
+    };
+    console.log(updatedData); // Log the data being sent to the backend
 
-    // TO DO: Handle form submission (e.g., send data to API)
+    try {
+      const response = await fetch("/api/profile-info", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedData),
+      });
 
-    console.log("Updated Profile Data:", formData);
+      if (!response.ok) {
+        const errorMessage = await response.text();
+        setError(errorMessage || "Something went wrong");
+        return;
+      }
 
-    // Simulate success after submission
-    setTimeout(() => {
-      alert("Profile updated successfully!");
+      alert("Profile updated successfully");
       router.push("/dashboard");
-    }, 1000);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to update profile. Please try again.");
+    }
   };
 
   return (
     <main className="min-h-screen bg-gray-900 text-white flex justify-center py-10">
-      {/* Main content */}
       <div className="w-full max-w-4xl flex gap-8">
-        {/* Left side (Main Content) */}
         <div className="flex-1 bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
           <h1 className="text-4xl font-semibold mb-8">Profile Information</h1>
 
-          {/* Form */}
           <form
             onSubmit={handleSubmit}
             className="bg-gray-800 p-6 rounded-lg space-y-6"
           >
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {/* Display error message if error exists */}
+            {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
 
+            {/* Username */}
             <div>
               <label
                 htmlFor="username"
@@ -106,6 +157,7 @@ const ProfileInfoPage = () => {
               />
             </div>
 
+            {/* Email */}
             <div>
               <label
                 htmlFor="email"
@@ -125,6 +177,7 @@ const ProfileInfoPage = () => {
               />
             </div>
 
+            {/* Bio */}
             <div>
               <label
                 htmlFor="bio"
@@ -143,6 +196,7 @@ const ProfileInfoPage = () => {
               ></textarea>
             </div>
 
+            {/* Location */}
             <div>
               <label
                 htmlFor="location"
@@ -157,10 +211,11 @@ const ProfileInfoPage = () => {
                 value={formData.location}
                 onChange={handleInputChange}
                 className="mt-1 p-3 w-full bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-                placeholder="Enter your location"
+                placeholder="Where are you from?"
               />
             </div>
 
+            {/* Birthdate */}
             <div>
               <label
                 htmlFor="birthdate"
@@ -178,10 +233,10 @@ const ProfileInfoPage = () => {
               />
             </div>
 
-            <div className="flex justify-end gap-4">
+            <div className="mt-6">
               <button
                 type="submit"
-                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                className="w-full p-3 bg-blue-500 rounded-md text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 Save Changes
               </button>
@@ -189,7 +244,7 @@ const ProfileInfoPage = () => {
           </form>
         </div>
 
-        {/* Right side (Sidebar) */}
+        {/* Sidebar */}
         <Sidebar />
       </div>
     </main>

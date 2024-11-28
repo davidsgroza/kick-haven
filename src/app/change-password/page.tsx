@@ -56,16 +56,40 @@ const ChangePasswordPage = () => {
       return;
     }
 
-    setError(null);
+    // Ensure session is loaded and user exists
+    if (!session || !session.user) {
+      setError("User not authenticated.");
+      return;
+    }
 
-    // TO DO: Handle password change
-    console.log("Changing password with data:", formData);
+    setError(null); // Reset error if passwords match
 
-    // Simulate a success
-    setTimeout(() => {
-      alert("Password changed successfully!");
-      router.push("/dashboard"); // Redirect back to dashboard after success
-    }, 1000);
+    try {
+      const response = await fetch("/api/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.user.name || ""}`, // Send session token here
+        },
+        body: JSON.stringify({
+          currentPassword: formData.currentPassword,
+          newPassword: formData.newPassword,
+          confirmNewPassword: formData.confirmNewPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Password changed successfully!");
+        router.push("/dashboard"); // Redirect to dashboard on success
+      } else {
+        setError(data.error || "Something went wrong");
+      }
+    } catch (error) {
+      setError("An unexpected error occurred.");
+      console.error(error);
+    }
   };
 
   return (
@@ -79,7 +103,9 @@ const ChangePasswordPage = () => {
             onSubmit={handleSubmit}
             className="bg-gray-800 p-6 rounded-lg space-y-6"
           >
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && (
+              <p className="text-red-500 text-sm">{error}</p> // Display error message here
+            )}
 
             <div>
               <label
