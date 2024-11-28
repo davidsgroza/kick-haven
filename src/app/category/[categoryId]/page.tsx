@@ -1,7 +1,8 @@
-"use client"; // This makes this component a Client Component
+"use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation"; // Correctly use `useParams` for dynamic routes
+import { useParams } from "next/navigation";
+import Link from "next/link";
 
 type Post = {
   _id: string;
@@ -15,7 +16,7 @@ type Post = {
 };
 
 const CategoryPage = () => {
-  const { categoryId } = useParams(); // Use useParams to get the dynamic categoryId from the URL
+  const { categoryId } = useParams();
   const [posts, setPosts] = useState<Post[]>([]);
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -77,16 +78,15 @@ const CategoryPage = () => {
           {posts
             .filter((post) => post.parentPost)
             .map((post) => (
-              <div
-                key={post._id}
-                className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700"
-              >
-                <h3 className="text-xl font-semibold">{post.title}</h3>
-                <p className="mt-2 text-sm">{post.text}</p>
-                <p className="mt-4 text-sm">
-                  Posted on: {new Date(post.date).toLocaleString()}
-                </p>
-              </div>
+              <Link key={post._id} href={`/post/${post._id}`}>
+                <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700 cursor-pointer">
+                  <h3 className="text-xl font-semibold">{post.title}</h3>
+                  <p className="mt-2 text-sm">{post.text}</p>
+                  <p className="mt-4 text-sm">
+                    Posted on: {new Date(post.date).toLocaleString()}
+                  </p>
+                </div>
+              </Link>
             ))}
         </div>
 
@@ -95,16 +95,15 @@ const CategoryPage = () => {
           {posts
             .filter((post) => !post.parentPost)
             .map((post) => (
-              <div
-                key={post._id}
-                className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700"
-              >
-                <h3 className="text-xl font-semibold">{post.title}</h3>
-                <p className="mt-2 text-sm">{post.text}</p>
-                <p className="mt-4 text-sm">
-                  Posted on: {new Date(post.date).toLocaleString()}
-                </p>
-              </div>
+              <Link key={post._id} href={`/post/${post._id}`}>
+                <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700 cursor-pointer">
+                  <h3 className="text-xl font-semibold">{post.title}</h3>
+                  <p className="mt-2 text-sm">{post.text}</p>
+                  <p className="mt-4 text-sm">
+                    Posted on: {new Date(post.date).toLocaleString()}
+                  </p>
+                </div>
+              </Link>
             ))}
         </div>
       </section>

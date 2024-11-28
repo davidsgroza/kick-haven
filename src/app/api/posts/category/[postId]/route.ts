@@ -15,15 +15,16 @@ const connectToDatabase = async () => {
   return cachedClient;
 };
 
+// API handler for getting a specific post by ID
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { postId: string } }
 ) {
-  const { id } = params;
+  const { postId } = params; // Extract postId from the route
 
-  if (!id || typeof id !== "string") {
+  if (!postId || typeof postId !== "string") {
     return NextResponse.json(
-      { error: "Invalid or missing category ID" },
+      { error: "Invalid or missing post ID" },
       { status: 400 }
     );
   }
@@ -31,18 +32,15 @@ export async function GET(
   try {
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
-    const categories = db.collection("categories");
+    const posts = db.collection("posts");
 
-    const category = await categories.findOne({ _id: new ObjectId(id) });
+    const post = await posts.findOne({ _id: new ObjectId(postId) });
 
-    if (!category) {
-      return NextResponse.json(
-        { error: "Category not found" },
-        { status: 404 }
-      );
+    if (!post) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    return NextResponse.json(category);
+    return NextResponse.json(post); // Return the post data
   } catch (err) {
     console.error(err);
     return NextResponse.json(
