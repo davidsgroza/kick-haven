@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { title, text, categoryId, sticky } = await request.json();
+    const { title, text, categoryId } = await request.json();
 
     if (!title || !text || !categoryId) {
       return NextResponse.json(
@@ -39,9 +39,9 @@ export async function POST(request: Request) {
 
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
-    const username = session.user.name;
 
     // Find the user by their username from the session
+    const username = session.user.name;
     const user = await db.collection("users").findOne({ username });
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
@@ -49,21 +49,20 @@ export async function POST(request: Request) {
 
     const userId = user._id.toString();
 
-    // Check if the user is an admin (assuming you have a 'role' field)
-    const isAdmin = user.role === "admin"; // Adjust based on your user schema
-
+    // Create the new post with locked set to false by default
     const newPost = {
       title,
       text,
-      categoryId: categoryId, // Store as string
-      userId: userId, // Store the found user's _id as string
-      username: username, // Session's username
+      categoryId, // Store as string
+      userId, // Store the found user's _id as string
+      username, // Session's username
       parentPost: true,
       date: new Date().toISOString(),
       upvotes: 0,
       downvotes: 0,
       commentCount: 0,
-      sticky: isAdmin && typeof sticky === "boolean" ? sticky : false, // Conditionally set sticky
+      sticky: false,
+      locked: false,
     };
 
     const posts = db.collection("posts");

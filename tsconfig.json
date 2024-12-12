@@ -28,7 +28,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "global.d.ts",
-    "src/utils/mongo.js"
+    "src/utils/mongo.js",
+    "src/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }
