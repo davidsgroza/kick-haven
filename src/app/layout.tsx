@@ -40,13 +40,15 @@ export default function RootLayout({
             <footer className="bg-gray-800 p-4 text-center">
               <Link
                 href="https://github.com/davidsgroza/kick-haven"
-                className="text-blue-400 underline"
+                className="mx-2 text-white hover:text-white hover:bg-gray-600 px-4 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 View the GitHub Repository
               </Link>
-              <p>© 2024 kickHaven. All rights reserved.</p>
+              <p className="py-1.5">
+                Copyright © 2024 kickHaven. All rights reserved.
+              </p>
             </footer>
           </div>
         </SessionWrapper>
