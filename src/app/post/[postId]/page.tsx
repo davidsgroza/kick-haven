@@ -5,8 +5,9 @@ import { useParams } from "next/navigation";
 
 type Post = {
   _id: string;
-  categoryId: string;
+  categoryName: string;
   userId: string;
+  username: string;
   parentPost: boolean;
   title: string;
   text: string;
@@ -54,30 +55,27 @@ const PostPage = () => {
   return (
     <main className="bg-gray-900 text-white min-h-screen p-8">
       <div className="max-w-3xl mx-auto">
-        {/* Title Section */}
-        <section className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white">
-            {post.title}
-          </h1>
-          <p className="mt-4 text-sm text-gray-400">
-            Posted by User {post.userId} on{" "}
-            {new Date(post.date).toLocaleString()}
-          </p>
-        </section>
+        {/* Post Card */}
+        <article className="bg-gray-800 p-6 rounded-lg shadow-lg">
+          {/* Category, User, and Time */}
+          <header className="mb-6">
+            <p className="text-sm text-blue-400 font-semibold">
+              {post.categoryName}
+            </p>
+            <div className="flex items-center justify-between text-gray-400 text-sm mt-1">
+              <span>Posted by {post.username || `User ${post.userId}`}</span>
+              <span>{new Date(post.date).toLocaleString()}</span>
+            </div>
+          </header>
 
-        {/* Post Content Section */}
-        <section className="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-          <p className="text-lg leading-relaxed text-gray-300">{post.text}</p>
-        </section>
+          {/* Title */}
+          <h1 className="text-3xl font-bold text-white mb-4">{post.title}</h1>
 
-        {/* Comments Section */}
-        <section className="bg-gray-800 p-6 rounded-lg shadow-lg">
-          <h2 className="text-xl font-semibold text-white mb-4">Comments</h2>
-          {/* Placeholder for comments */}
-          <p className="text-gray-400">
-            No comments yet. Be the first to comment!
-          </p>
-        </section>
+          {/* Post Content */}
+          <div className="text-lg leading-relaxed text-gray-300">
+            <p>{post.text}</p>
+          </div>
+        </article>
       </div>
     </main>
   );

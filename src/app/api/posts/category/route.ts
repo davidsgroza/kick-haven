@@ -1,7 +1,7 @@
 import { MongoClient } from "mongodb";
 import { NextResponse } from "next/server";
 
-const uri = "mongodb://127.0.0.1:27017"; // Replace with your MongoDB URI
+const uri = "mongodb://127.0.0.1:27017";
 const client = new MongoClient(uri);
 
 export async function GET(request: Request) {
@@ -22,7 +22,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json(posts);
   } catch (err: unknown) {
-    // Type guard to check if error is an instance of Error
     if (err instanceof Error) {
       console.error("Error fetching posts:", err.message);
     } else {

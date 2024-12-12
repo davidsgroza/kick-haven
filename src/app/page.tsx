@@ -11,7 +11,7 @@ export default function HomePage() {
       </section>
 
       <section>
-        <h2 className="text-2xl font-semibold mb-6">Popular Genres</h2>
+        <h2 className="text-2xl font-semibold mb-6">Categories</h2>
         <div className="grid grid-cols-2 gap-4">
           {[
             { genre: "Rock", categoryId: "60d23d8f5c5f2c001c9a59f0" },
