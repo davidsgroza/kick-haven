@@ -1,5 +1,3 @@
-// src/app/posts/[postId]/page.tsx
-
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
@@ -62,7 +60,10 @@ const PostPage = () => {
         try {
           const postResponse = await fetch(`/api/posts/category/${postId}`);
           if (!postResponse.ok) {
-            throw new Error(`Post fetch failed: ${postResponse.statusText}`);
+            const errorData = await postResponse.json();
+            throw new Error(
+              errorData.error || `Post fetch failed: ${postResponse.statusText}`
+            );
           }
           const postData: Post = await postResponse.json();
           setPost(postData);
@@ -88,8 +89,10 @@ const PostPage = () => {
         try {
           const commentsResponse = await fetch(`/api/comments/${postId}`);
           if (!commentsResponse.ok) {
+            const errorData = await commentsResponse.json();
             throw new Error(
-              `Comments fetch failed: ${commentsResponse.statusText}`
+              errorData.error ||
+                `Comments fetch failed: ${commentsResponse.statusText}`
             );
           }
           const commentsData: Comment[] = await commentsResponse.json();
@@ -121,13 +124,14 @@ const PostPage = () => {
         method: "POST",
       });
       if (!response.ok) {
-        throw new Error("Failed to upvote.");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to upvote.");
       }
       const updatedPost: Post = await response.json();
       setPost(updatedPost);
     } catch (error) {
       console.error(error);
-      // Optionally, display an error message to the user
+      // Add error message
     }
   };
 
@@ -139,13 +143,14 @@ const PostPage = () => {
         method: "POST",
       });
       if (!response.ok) {
-        throw new Error("Failed to downvote.");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to downvote.");
       }
       const updatedPost: Post = await response.json();
       setPost(updatedPost);
     } catch (error) {
       console.error(error);
-      // Optionally, display an error message to the user
+      // Add error message
     }
   };
 
@@ -177,8 +182,14 @@ const PostPage = () => {
 
       const newComment: Comment = await response.json();
 
-      // Append the new comment to the existing comments
       setComments((prevComments) => [newComment, ...prevComments]);
+
+      // Update the post's comment count
+      setPost((prevPost) =>
+        prevPost
+          ? { ...prevPost, commentCount: prevPost.commentCount + 1 }
+          : prevPost
+      );
 
       // Clear the comment input
       setNewCommentText("");
@@ -213,7 +224,7 @@ const PostPage = () => {
               <div className="flex items-center">
                 {/* Profile Picture */}
                 <Image
-                  src="/icon.jpg" // Reference the image in the public directory
+                  src="/icon.jpg" //
                   alt={`${post.username}'s profile`}
                   width={24}
                   height={24}
@@ -315,7 +326,7 @@ const PostPage = () => {
                       <div className="flex items-center">
                         {/* Profile Picture */}
                         <Image
-                          src="/icon.jpg" // Reference the image in the public directory
+                          src="/icon.jpg"
                           alt={`${comment.username}'s profile`}
                           width={24}
                           height={24}
@@ -332,22 +343,8 @@ const PostPage = () => {
                       </span>
                     </div>
                     <p className="text-gray-200 mt-2">{comment.text}</p>
-                    {/* Optionally, add voting for comments */}
-                    {/* <div className="flex items-center space-x-2 mt-2">
-                      <button
-                        className="text-green-400 hover:text-green-300"
-                        aria-label="Upvote comment"
-                      >
-                        ▲
-                      </button>
-                      <span>{comment.upvotes - comment.downvotes}</span>
-                      <button
-                        className="text-red-400 hover:text-red-300"
-                        aria-label="Downvote comment"
-                      >
-                        ▼
-                      </button>
-                    </div> */}
+                    {/* Add voting for comments */}
+                    {}
                   </li>
                 ))}
               </ul>
