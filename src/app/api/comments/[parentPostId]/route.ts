@@ -1,4 +1,4 @@
-// app/api/comments/[parentPostId]/route.ts
+// src/app/api/comments/[parentPostId]/route.ts
 
 import { MongoClient, ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
@@ -21,20 +21,37 @@ async function connectToDatabase() {
   return cachedClient;
 }
 
-// TypeScript interfaces
+// TypeScript Interfaces
 interface User {
   _id: ObjectId;
   username: string;
 }
 
-interface Post {
+interface ParentPost {
   _id: ObjectId;
   userId: ObjectId;
   categoryId: string;
   username: string;
   title: string;
   text: string;
-  parentPost: boolean;
+  parentPost: true;
+  parentPostId: null;
+  date: string;
+  upvotes: number;
+  downvotes: number;
+  commentCount: number;
+  sticky: boolean;
+  locked: boolean;
+}
+
+interface Comment {
+  _id: ObjectId;
+  userId: ObjectId;
+  categoryId: string;
+  username: string;
+  title: string;
+  text: string;
+  parentPost: false;
   parentPostId: ObjectId;
   date: string;
   upvotes: number;
@@ -44,8 +61,7 @@ interface Post {
   locked: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface Comment extends Post {}
+type Post = ParentPost | Comment;
 
 // GET: Fetch comments with pagination and sorting
 export async function GET(
@@ -73,7 +89,7 @@ export async function GET(
     const posts = db.collection<Post>("posts");
 
     const comments = await posts
-      .find({
+      .find<Comment>({
         parentPost: false,
         parentPostId: new ObjectId(parentPostId),
       })
@@ -85,7 +101,7 @@ export async function GET(
     const serializedComments = comments.map((comment) => ({
       ...comment,
       _id: comment._id.toString(),
-      parentPostId: comment.parentPostId?.toString() || null,
+      parentPostId: comment.parentPostId.toString(),
       userId: comment.userId.toString(),
     }));
 
@@ -99,7 +115,7 @@ export async function GET(
   }
 }
 
-// POST: Create a new comment with title set to Re: [Parent Post Title]
+// POST: Create a new comment with title set to Re: [Parent Post Title] and inherit categoryId
 export async function POST(
   request: Request,
   { params }: { params: { parentPostId: string } }
@@ -132,11 +148,10 @@ export async function POST(
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
     const posts = db.collection<Post>("posts");
+    const users = db.collection<User>("users");
 
     // Find user
-    const user = await db
-      .collection<User>("users")
-      .findOne({ username: session.user.name });
+    const user = await users.findOne({ username: session.user.name });
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
@@ -150,11 +165,15 @@ export async function POST(
       );
     }
 
+    // Determine the categoryId for the comment
+    const commentCategoryId = parentPost.categoryId || "";
+
+    // Create new comment
     const newComment: Comment = {
       _id: new ObjectId(),
       userId: user._id,
       username: user.username,
-      categoryId: "",
+      categoryId: commentCategoryId, // Inherit categoryId from parent post
       title: `Re: ${parentPost.title || "Original Post"}`,
       text: text.trim(),
       parentPost: false,
@@ -175,15 +194,15 @@ export async function POST(
       { $inc: { commentCount: 1 } }
     );
 
-    return NextResponse.json(
-      {
-        ...newComment,
-        _id: newComment._id.toString(),
-        parentPostId: newComment.parentPostId.toString(),
-        userId: newComment.userId.toString(),
-      },
-      { status: 201 }
-    );
+    // Serialize the new comment for the response
+    const serializedComment = {
+      ...newComment,
+      _id: newComment._id.toString(),
+      parentPostId: newComment.parentPostId.toString(),
+      userId: newComment.userId.toString(),
+    };
+
+    return NextResponse.json(serializedComment, { status: 201 });
   } catch (err: unknown) {
     console.error("Failed to create comment:", err);
     return NextResponse.json(
