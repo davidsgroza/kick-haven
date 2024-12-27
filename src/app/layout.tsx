@@ -17,7 +17,7 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-// Metadata for the application (server-side)
+// Metadata for the application
 export const metadata: Metadata = {
   title: "kickHaven",
   description: "A forum for music fans",
@@ -35,7 +35,7 @@ export default function RootLayout({
       >
         <SessionWrapper>
           <div className="min-h-screen flex flex-col bg-gray-900 text-white">
-            <Navbar /> {/* Navbar component now correctly imported */}
+            <Navbar /> {/* Navbar component is imported */}
             <main className="flex-grow">{children}</main>
             <footer className="bg-gray-800 p-4 text-center">
               <Link
