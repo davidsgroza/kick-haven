@@ -1,4 +1,5 @@
-// utils/mongo.ts
+// src/utils/mongo.ts
+
 import { MongoClient, ServerApiVersion } from "mongodb";
 
 // Connection URI
