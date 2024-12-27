@@ -125,7 +125,7 @@ const CategoryPage = () => {
           {/* Category Header */}
           <section className="text-center mb-12">
             <h1 className="text-4xl font-bold">
-              Category: {category?.name || "Loading..."}
+              kH: {category?.name || "Loading..."}
             </h1>
             <p className="text-lg mt-4">
               {category?.description || "Explore discussions in this category!"}
