@@ -1,8 +1,47 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
+// Define a Category object
+interface Category {
+  _id: string;
+  name: string;
+  description: string;
+}
+
 export default function HomePage() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch("/api/categories");
+
+        if (!res.ok) {
+          throw new Error(
+            `Failed to fetch categories: ${res.status} ${res.statusText}`
+          );
+        }
+
+        const data: Category[] = await res.json();
+        setCategories(data);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+        setError("Unable to load categories at this time.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   return (
     <main className="bg-gray-900 text-white min-h-screen p-8">
+      {/* Welcome Section */}
       <section className="text-center mb-12">
         <h1 className="text-4xl font-bold">Welcome to kickHaven</h1>
         <p className="text-lg mt-4">
@@ -10,37 +49,38 @@ export default function HomePage() {
         </p>
       </section>
 
+      {/* Categories Section */}
       <section>
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-semibold mb-6">Categories</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { genre: "Rock", categoryId: "60d23d8f5c5f2c001c9a59f0" },
-              { genre: "Alt-Rock", categoryId: "60d23d8f5c5f2c001c9a59f1" },
-              { genre: "Pop-Punk", categoryId: "60d23d8f5c5f2c001c9a59f2" },
-              { genre: "Punk", categoryId: "60d23d8f5c5f2c001c9a59f3" },
-              { genre: "Hardcore", categoryId: "60d23d8f5c5f2c001c9a59f4" },
-              {
-                genre: "Post-Hardcore",
-                categoryId: "60d23d8f5c5f2c001c9a59f5",
-              },
-              { genre: "Metalcore", categoryId: "60d23d8f5c5f2c001c9a59f6" },
-              { genre: "Glam-Metal", categoryId: "60d23d8f5c5f2c001c9a59f7" },
-            ].map(({ genre, categoryId }) => (
-              <Link
-                key={categoryId}
-                href={`/category/${categoryId}`}
-                className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700 group"
-              >
-                <div className="p-6 rounded-lg flex flex-col items-center group-hover:bg-gray-700">
-                  <h3 className="text-xl font-semibold">{genre}</h3>
-                  <p className="mt-2 text-sm">
-                    Dive into discussions about {genre} music.
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+
+          {/* Loading State */}
+          {loading && <p>Loading categories...</p>}
+
+          {/* Error Handling */}
+          {error && <p className="text-red-500">{error}</p>}
+
+          {/* Categories Grid */}
+          {!loading && !error && (
+            <div className="grid grid-cols-2 gap-4">
+              {categories.length > 0 ? (
+                categories.map(({ _id, name, description }) => (
+                  <Link
+                    key={_id}
+                    href={`/category/${_id}`}
+                    className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700 group"
+                  >
+                    <div className="flex flex-col items-center">
+                      <h3 className="text-xl font-semibold">{name}</h3>
+                      <p className="mt-2 text-sm">{description}</p>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <p>No categories available at the moment.</p>
+              )}
+            </div>
+          )}
         </div>
       </section>
     </main>
