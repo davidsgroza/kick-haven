@@ -1,4 +1,7 @@
+// app/api/user/posts/route.ts
+
 import { MongoClient } from "mongodb";
+import type { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -22,49 +25,68 @@ async function connectToDatabase() {
   return cachedClient;
 }
 
+// Define TypeScript interfaces
+interface User {
+  _id: ObjectId;
+  username: string;
+}
+
+interface Post {
+  _id: ObjectId;
+  userId: ObjectId;
+  categoryId: string;
+  title: string;
+  text: string;
+  parentPost: boolean;
+  parentPostId?: ObjectId;
+  date: string;
+}
+
+interface AggregatedPost extends Post {
+  parentPostDetails?: {
+    title: string;
+  };
+}
+
+interface ProcessedPost {
+  _id: string;
+  categoryId: string;
+  title: string;
+  snippet: string;
+  date: string;
+}
+
 /**
- * Handles GET requests to fetch the authenticated user's posts and comments.
+ * Handles GET requests to fetch the authenticated user's main posts and comments.
  */
-export async function GET(_request: Request) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_: Request) {
   try {
-    // Retrieve the session to identify the authenticated user
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user || !session.user.name) {
-      // If the user is not authenticated, return a 401 Unauthorized response
-      return NextResponse.json(
-        { error: "Unauthorized or username missing in session" },
-        { status: 401 }
-      );
+    if (!session?.user?.name) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
-    const postsCollection = db.collection("posts");
-    const usersCollection = db.collection("users");
+    const postsCollection = db.collection<Post>("posts");
+    const usersCollection = db.collection<User>("users");
 
-    // Find the user document based on the username from the session
-    const username = session.user.name;
-    const user = await usersCollection.findOne({ username });
+    const user = await usersCollection.findOne({ username: session.user.name });
 
     if (!user) {
-      // If the user is not found in the database, return a 404 Not Found response
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
     const userId = user._id;
 
-    // Perform an aggregation to fetch all posts by the user
     const userPosts = await postsCollection
-      .aggregate([
-        {
-          $match: {
-            userId: userId,
-          },
-        },
+      .aggregate<AggregatedPost>([
+        { $match: { userId: userId } },
         {
           $lookup: {
-            from: "posts", // Lookup in the same collection to find parent posts
+            from: "posts",
             localField: "parentPostId",
             foreignField: "_id",
             as: "parentPostDetails",
@@ -79,44 +101,40 @@ export async function GET(_request: Request) {
         {
           $project: {
             _id: 1,
-            subcategory: 1,
+            categoryId: 1,
             title: 1,
             text: 1,
             parentPost: 1,
-            parentPostTitle: "$parentPostDetails.title", // Include parent post title
+            parentPostDetails: 1,
             date: 1,
           },
         },
       ])
       .toArray();
 
-    // Format titles
-    const processedPosts = userPosts.map((post) => {
-      let displayTitle = post.title;
+    const processedPosts: ProcessedPost[] = userPosts.map((post) => {
+      const displayTitle = post.parentPost
+        ? post.title || "Untitled Post"
+        : `Re: ${post.parentPostDetails?.title || "Original Post"}`;
 
-      if (!post.parentPost) {
-        // If the post is a comment, prefix the title with "Re: " and include the parent post's title
-        displayTitle = `Re: ${post.parentPostTitle || "Original Post"}`;
-      }
-
-      // Create a snippet from the post's text
       const snippet =
-        post.text.length > 100 ? post.text.slice(0, 100) + "..." : post.text;
+        post.text.length > 100 ? `${post.text.slice(0, 100)}...` : post.text;
 
       return {
         _id: post._id.toString(),
-        subcategory: post.subcategory,
+        categoryId: post.categoryId || "General",
         title: displayTitle,
-        snippet: snippet,
+        snippet,
         date: post.date,
       };
     });
 
-    // Return the processed posts as a JSON response
     return NextResponse.json(processedPosts, { status: 200 });
   } catch (err: unknown) {
     console.error("Error fetching user posts:", err);
-    // If an error occurs, return a 500 Internal Server Error response
+    if (err instanceof Error) {
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
     return NextResponse.json(
       { error: "Failed to fetch user posts." },
       { status: 500 }

@@ -1,3 +1,4 @@
+// API for creating a post from Create Post section
 import { MongoClient } from "mongodb";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -54,8 +55,8 @@ export async function POST(request: Request) {
       title,
       text,
       categoryId, // Store as string
-      userId, // Store the found user's _id as string
-      username, // Session's username
+      userId,
+      username,
       parentPost: true,
       date: new Date().toISOString(),
       upvotes: 0,

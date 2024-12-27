@@ -1,3 +1,4 @@
+// API for getting all the posts in the cateogry
 import { MongoClient } from "mongodb";
 import { NextResponse } from "next/server";
 

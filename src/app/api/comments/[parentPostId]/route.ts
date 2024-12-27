@@ -1,3 +1,5 @@
+// app/api/comments/[parentPostId]/route.ts
+
 import { MongoClient, ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -9,6 +11,7 @@ const uri =
 
 let cachedClient: MongoClient | null = null;
 
+// Connect to MongoDB
 async function connectToDatabase() {
   if (!cachedClient) {
     const client = new MongoClient(uri);
@@ -18,24 +21,39 @@ async function connectToDatabase() {
   return cachedClient;
 }
 
-/**
- * Handles GET and POST requests for comments related to a specific post.
- */
+// TypeScript interfaces
+interface User {
+  _id: ObjectId;
+  username: string;
+}
+
+interface Post {
+  _id: ObjectId;
+  userId: ObjectId;
+  categoryId: string;
+  username: string;
+  title: string;
+  text: string;
+  parentPost: boolean;
+  parentPostId: ObjectId;
+  date: string;
+  upvotes: number;
+  downvotes: number;
+  commentCount: number;
+  sticky: boolean;
+  locked: boolean;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface Comment extends Post {}
+
+// GET: Fetch comments with pagination and sorting
 export async function GET(
   request: Request,
   { params }: { params: { parentPostId: string } }
 ) {
   const { parentPostId } = params;
 
-  // Validate presence and type of parentPostId
-  if (!parentPostId || typeof parentPostId !== "string") {
-    return NextResponse.json(
-      { error: "Invalid or missing parent post ID" },
-      { status: 400 }
-    );
-  }
-
-  // Validate parentPostId
   if (!ObjectId.isValid(parentPostId)) {
     return NextResponse.json(
       { error: "Invalid parent post ID format" },
@@ -43,29 +61,35 @@ export async function GET(
     );
   }
 
+  // Parse query parameters
+  const url = new URL(request.url);
+  const page = parseInt(url.searchParams.get("page") || "1", 10);
+  const limit = parseInt(url.searchParams.get("limit") || "5", 10);
+  const sort = url.searchParams.get("sort") === "desc" ? -1 : 1;
+
   try {
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
-    const posts = db.collection("posts");
+    const posts = db.collection<Post>("posts");
 
-    // Fetch comments where parentPost is false and parentPostId matches
     const comments = await posts
       .find({
         parentPost: false,
         parentPostId: new ObjectId(parentPostId),
       })
-      .sort({ date: -1 }) // Sort comments by latest first
+      .sort({ date: sort })
+      .skip((page - 1) * limit)
+      .limit(limit)
       .toArray();
 
-    // Convert ObjectId fields to strings
-    const commentsWithStringIds = comments.map((comment) => ({
+    const serializedComments = comments.map((comment) => ({
       ...comment,
       _id: comment._id.toString(),
-      parentPostId: comment.parentPostId.toString(),
+      parentPostId: comment.parentPostId?.toString() || null,
       userId: comment.userId.toString(),
     }));
 
-    return NextResponse.json(commentsWithStringIds, { status: 200 });
+    return NextResponse.json(serializedComments, { status: 200 });
   } catch (err: unknown) {
     console.error("Error fetching comments:", err);
     return NextResponse.json(
@@ -75,21 +99,13 @@ export async function GET(
   }
 }
 
+// POST: Create a new comment with title set to Re: [Parent Post Title]
 export async function POST(
   request: Request,
   { params }: { params: { parentPostId: string } }
 ) {
   const { parentPostId } = params;
 
-  // Validate presence and type of parentPostId
-  if (!parentPostId || typeof parentPostId !== "string") {
-    return NextResponse.json(
-      { error: "Invalid or missing parent post ID" },
-      { status: 400 }
-    );
-  }
-
-  // Validate parentPostId format
   if (!ObjectId.isValid(parentPostId)) {
     return NextResponse.json(
       { error: "Invalid parent post ID format" },
@@ -97,48 +113,52 @@ export async function POST(
     );
   }
 
-  // Authenticate the user
+  // Authenticate user
   const session = await getServerSession(authOptions);
-  if (!session || !session.user || !session.user.name) {
-    return NextResponse.json(
-      { error: "Unauthorized or username missing in session" },
-      { status: 401 }
-    );
+  if (!session?.user?.name) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const { text } = await request.json();
 
-    // Validate comment text
     if (!text || typeof text !== "string" || !text.trim()) {
       return NextResponse.json(
-        { error: "Comment text is required and cannot be empty." },
+        { error: "Comment text is required." },
         { status: 400 }
       );
     }
 
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
-    const posts = db.collection("posts");
+    const posts = db.collection<Post>("posts");
 
-    // Find the user by their username from the session
-    const username = session.user.name;
-    const user = await db.collection("users").findOne({ username });
+    // Find user
+    const user = await db
+      .collection<User>("users")
+      .findOne({ username: session.user.name });
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    const userId = user._id.toString();
+    // Find parent post
+    const parentPost = await posts.findOne({ _id: new ObjectId(parentPostId) });
+    if (!parentPost) {
+      return NextResponse.json(
+        { error: "Parent post not found." },
+        { status: 404 }
+      );
+    }
 
-    // Create the new comment document
-    const newComment = {
-      title: "", // Comments don't have a title
+    const newComment: Comment = {
+      _id: new ObjectId(),
+      userId: user._id,
+      username: user.username,
+      categoryId: "",
+      title: `Re: ${parentPost.title || "Original Post"}`,
       text: text.trim(),
-      categoryId: "", // Comments don't belong to a category directly
-      userId: new ObjectId(userId),
-      username,
-      parentPost: false, // Indicates this is a comment
-      parentPostId: new ObjectId(parentPostId), // References the parent post
+      parentPost: false,
+      parentPostId: new ObjectId(parentPostId),
       date: new Date().toISOString(),
       upvotes: 0,
       downvotes: 0,
@@ -147,30 +167,23 @@ export async function POST(
       locked: false,
     };
 
-    // Insert the new comment into the posts collection
-    const result = await posts.insertOne(newComment);
+    await posts.insertOne(newComment);
 
-    // Get the inserted comment
-    const insertedComment = await posts.findOne({ _id: result.insertedId });
-    if (!insertedComment) {
-      throw new Error("Failed to retrieve the newly created comment.");
-    }
-
-    // Convert ObjectId fields to strings
-    const serializedComment = {
-      ...insertedComment,
-      _id: insertedComment._id.toString(),
-      parentPostId: insertedComment.parentPostId.toString(),
-      userId: insertedComment.userId.toString(),
-    };
-
-    // Add +1 to commentCount in the parent post
+    // Increment commentCount in parent post
     await posts.updateOne(
       { _id: new ObjectId(parentPostId) },
       { $inc: { commentCount: 1 } }
     );
 
-    return NextResponse.json(serializedComment, { status: 201 });
+    return NextResponse.json(
+      {
+        ...newComment,
+        _id: newComment._id.toString(),
+        parentPostId: newComment.parentPostId.toString(),
+        userId: newComment.userId.toString(),
+      },
+      { status: 201 }
+    );
   } catch (err: unknown) {
     console.error("Failed to create comment:", err);
     return NextResponse.json(
