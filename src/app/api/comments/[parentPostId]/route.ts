@@ -1,6 +1,6 @@
 // src/app/api/comments/[parentPostId]/route.ts
 
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient, ObjectId, Sort } from "mongodb";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -19,6 +19,22 @@ async function connectToDatabase() {
     cachedClient = client;
   }
   return cachedClient;
+}
+
+// Helper function to get the sort order
+function getSortOrder(sortType: string): Sort {
+  switch (sortType) {
+    case "newest":
+      return { date: -1, netScore: -1 }; // descending order for newest, tie-break by netScore
+    case "oldest":
+      return { date: 1, netScore: -1 }; // ascending order for oldest, tie-break by netScore
+    case "upvotes-desc":
+      return { netScore: -1, date: -1 }; // descending order for net score, tie-breaking by date
+    case "upvotes-asc":
+      return { netScore: 1, date: -1 }; // ascending order for net score, tie-breaking by date
+    default:
+      return { date: -1, netScore: -1 }; // Default to newest if sortType is unknown
+  }
 }
 
 // TypeScript Interfaces
@@ -81,23 +97,45 @@ export async function GET(
   const url = new URL(request.url);
   const page = parseInt(url.searchParams.get("page") || "1", 10);
   const limit = parseInt(url.searchParams.get("limit") || "5", 10);
-  const sort = url.searchParams.get("sort") === "desc" ? -1 : 1;
+  const sortType = url.searchParams.get("sort") || "newest"; // default to "newest"
+
+  // Define sorting logic based on sortType
+  const sortOrder: Sort = getSortOrder(sortType);
 
   try {
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
-    const posts = db.collection<Post>("posts");
 
-    const comments = await posts
-      .find<Comment>({
-        parentPost: false,
-        parentPostId: new ObjectId(parentPostId),
-      })
-      .sort({ date: sort })
-      .skip((page - 1) * limit)
-      .limit(limit)
+    // Comments collection
+    const postsCollection = db.collection<Post>("posts");
+
+    // Fetch comments with dynamic sorting, including net score calculation
+    const comments = await postsCollection
+      .aggregate([
+        {
+          $match: {
+            parentPost: false,
+            parentPostId: new ObjectId(parentPostId),
+          },
+        },
+        {
+          $addFields: {
+            netScore: { $subtract: ["$upvotes", "$downvotes"] }, // Calculate netScore
+          },
+        },
+        {
+          $sort: sortOrder, // Apply dynamic sorting (netScore and date)
+        },
+        {
+          $skip: (page - 1) * limit,
+        },
+        {
+          $limit: limit,
+        },
+      ])
       .toArray();
 
+    // Serialize comments
     const serializedComments = comments.map((comment) => ({
       ...comment,
       _id: comment._id.toString(),

@@ -61,7 +61,7 @@ const CategorySidebar = () => {
               >
                 {/*Category Icon */}
                 <Image
-                  src="/icon.jpg" // Replace with a category-specific icon
+                  src="/icon.jpg"
                   alt={`${category.name} Icon`}
                   width={20}
                   height={20}

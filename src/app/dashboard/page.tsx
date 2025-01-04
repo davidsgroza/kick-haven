@@ -100,7 +100,7 @@ const DashboardPage = () => {
     setSortOrder(e.target.value);
   };
 
-  // Function to generate snippet from text without breaking words
+  // Function to generate snippet from text, no word breaking
   const generateSnippet = (text: string, maxLength: number = 200) => {
     if (text.length <= maxLength) return text;
     const truncated = text.slice(0, maxLength);
