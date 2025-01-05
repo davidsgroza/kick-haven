@@ -45,7 +45,7 @@ interface Post {
   locked: boolean;
 }
 
-// GET: Fetch a specific post by ID
+// GET: Fetch a specific post by ID with user profile image
 export async function GET(
   request: Request,
   { params }: { params: { postId: string } }
@@ -62,22 +62,50 @@ export async function GET(
   try {
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
-    const posts = db.collection<Post>("posts");
+    const postsCollection = db.collection("posts");
 
-    const post = await posts.findOne({ _id: new ObjectId(postId) });
+    const post = await postsCollection
+      .aggregate([
+        {
+          $match: { _id: new ObjectId(postId) },
+        },
+        {
+          // Join with users collection to get user details
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userDetails",
+          },
+        },
+        {
+          // Flatten the user details array
+          $unwind: {
+            path: "$userDetails",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ])
+      .toArray();
 
-    if (!post) {
+    if (post.length === 0) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    const serializedPost = {
-      ...post,
-      _id: post._id.toString(),
-      userId: post.userId.toString(),
-      parentPostId: post.parentPostId?.toString() || null,
+    const serializedPost = post[0];
+
+    // Use the userId to generate the profile image URL
+    const profileImageUrl = `/api/user/profile-image/${serializedPost.userId.toString()}`;
+
+    const responsePost = {
+      ...serializedPost,
+      _id: serializedPost._id.toString(),
+      userId: serializedPost.userId.toString(),
+      parentPostId: serializedPost.parentPostId?.toString() || null,
+      profileImage: profileImageUrl, // Use the generated URL for the profile image
     };
 
-    return NextResponse.json(serializedPost, { status: 200 });
+    return NextResponse.json(responsePost, { status: 200 });
   } catch (err: unknown) {
     console.error("Error fetching post:", err);
     return NextResponse.json(

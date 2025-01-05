@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { SessionStrategy } from "next-auth";
 import { AdapterUser } from "next-auth/adapters";
 
+// NextAuth configuration
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
@@ -33,12 +34,12 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
-        // Return an AdapterUser compatible object including emailVerified
+        // Return the user object including `id` and `name`, ensuring it's compatible with AdapterUser
         return {
-          id: dbUser._id.toString(),
+          id: dbUser._id.toString(), // Add user `id`
           name: dbUser.username,
           email: dbUser.email,
-          emailVerified: null, // required by AdapterUser
+          emailVerified: null, // `emailVerified` is required by AdapterUser
         } satisfies AdapterUser;
       },
     }),
@@ -51,18 +52,17 @@ export const authOptions: AuthOptions = {
     error: "/auth/error",
   },
   callbacks: {
-    // Only destructure what we need to avoid unused var warnings
+    // Add `id` to the JWT token when user logs in
     async jwt({ token, user }) {
-      // If a user signed in, add their id to the token
       if (user) {
-        token.id = user.id;
+        token.id = user.id; // Add user `id` to token
       }
       return token;
     },
+    // Add `id` to the session.user when the session is being created
     async session({ session, token }) {
-      // If token has an id, add it to session.user
       if (token.id) {
-        (session.user as { id?: string }).id = token.id as string;
+        (session.user as { id?: string }).id = token.id as string; // Add `id` to session.user
       }
       return session;
     },

@@ -29,6 +29,7 @@ interface Post {
   sticky: boolean;
   locked: boolean;
   userVote: "upvote" | "downvote" | null;
+  profileImage?: string;
 }
 
 interface Comment {
@@ -41,6 +42,7 @@ interface Comment {
   upvotes: number;
   downvotes: number;
   userVote: "upvote" | "downvote" | null;
+  profileImage?: string;
 }
 
 interface Category {
@@ -202,8 +204,33 @@ const PostPage = () => {
   }, [postId, currentPage, sortOrder, fetchComments]);
 
   // Loading & error checks
-  if (loading || categoriesLoading) {
-    return <p className="text-center text-white">Loading...</p>;
+  // Loading & error checks
+  if (loading || categoriesLoading || commentsLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-900">
+        {/* Loading Spinner */}
+        <svg
+          className="animate-spin h-8 w-8 text-blue-600"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8H4z"
+          />
+        </svg>
+      </div>
+    );
   }
 
   if (error) {
@@ -517,6 +544,7 @@ const PostPage = () => {
         <div className="flex-1">
           <article className="bg-gray-800 p-6 rounded-lg shadow-lg">
             <div className="flex items-center justify-between">
+              {/* Category Link */}
               <p
                 className="text-blue-500 text-sm font-semibold hover:underline cursor-pointer"
                 onClick={() => router.push(`/category/${post.categoryId}`)}
@@ -524,6 +552,41 @@ const PostPage = () => {
                 kH: {categoryName}
               </p>
             </div>
+
+            {/* Author Username, Photo, and Date */}
+            <div className="flex justify-between items-center mt-2">
+              {/* Left side: User Profile Image and Username */}
+              <div className="flex items-center">
+                {/* User Profile Image */}
+                <Image
+                  src={post.profileImage || "/icon.jpg"}
+                  alt={`${post.username}'s profile`}
+                  width={30}
+                  height={30}
+                  className="rounded-full overflow-hidden object-cover"
+                  unoptimized // Prevents Next.js image optimization
+                />
+                {/* Clickable Username */}
+                <button
+                  onClick={() => router.push(`/user/${post.userId}`)} // Redirect to the user's profile page
+                  className="text-white ml-2 text-sm font-semibold hover:underline"
+                >
+                  {post.username}
+                </button>
+              </div>
+
+              {/* Right side: Post Date */}
+              <span className="text-sm text-gray-400">
+                {new Date(post.date).toLocaleString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+
             <h1 className="text-3xl font-bold text-white mt-4">{post.title}</h1>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]} // GitHub Flavored Markdown support
@@ -658,34 +721,39 @@ const PostPage = () => {
                 <option value="upvotes-asc">Least Upvoted</option>
               </select>
             </div>
-
             {/* New Comment Form */}
             {session ? (
-              <form onSubmit={handleSubmitComment} className="mb-6">
-                <textarea
-                  key={submittingComment ? "submitting" : "normal"} // Change key to force reset
-                  className="w-full p-3 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Add a comment..."
-                  defaultValue={newCommentTextRef.current} // Use ref value directly
-                  onChange={(e) => {
-                    newCommentTextRef.current = e.target.value;
-                  }} // Update ref, no re-render
-                  rows={4}
-                  required
-                />
-                {submitError && (
-                  <p className="text-red-500 mt-2">{submitError}</p>
-                )}
-                <button
-                  type="submit"
-                  disabled={submittingComment}
-                  className={`mt-2 px-4 py-2 rounded border border-gray-300 text-gray-300 hover:border-white hover:text-white transition ${
-                    submittingComment ? "cursor-not-allowed opacity-50" : ""
-                  }`}
-                >
-                  {submittingComment ? "Submitting..." : "Submit Comment"}
-                </button>
-              </form>
+              post.locked ? (
+                <p className="text-red-500 mt-2">
+                  This thread is locked. You cannot comment.
+                </p>
+              ) : (
+                <form onSubmit={handleSubmitComment} className="mb-6">
+                  <textarea
+                    key={submittingComment ? "submitting" : "normal"} // Change key to force reset
+                    className="w-full p-3 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Add a comment..."
+                    defaultValue={newCommentTextRef.current} // Use ref value directly
+                    onChange={(e) => {
+                      newCommentTextRef.current = e.target.value;
+                    }} // Update ref, no re-render
+                    rows={4}
+                    required
+                  />
+                  {submitError && !post.locked && (
+                    <p className="text-red-500 mt-2">{submitError}</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={submittingComment}
+                    className={`mt-2 px-4 py-2 rounded border border-gray-300 text-gray-300 hover:border-white hover:text-white transition ${
+                      submittingComment ? "cursor-not-allowed opacity-50" : ""
+                    }`}
+                  >
+                    {submittingComment ? "Submitting..." : "Submit Comment"}
+                  </button>
+                </form>
+              )
             ) : (
               <button
                 onClick={() => router.push("/login")}
@@ -710,17 +778,22 @@ const PostPage = () => {
                     className="bg-gray-700 p-4 rounded mb-4"
                   >
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center">
+                      <div className="flex items-center space-x-2">
+                        {/* User Profile Image */}
                         <Image
-                          src="/icon.jpg"
+                          src={comment.profileImage || "/icon.jpg"}
                           alt={`${comment.username}'s profile`}
-                          width={24}
-                          height={24}
-                          className="rounded-full mr-2"
+                          width={30}
+                          height={30}
+                          className="rounded-full overflow-hidden object-cover"
                         />
-                        <span className="text-gray-300">
-                          {comment.username || `User ${comment.userId}`}
-                        </span>
+                        {/* Clickable Username */}
+                        <button
+                          onClick={() => router.push(`/user/${comment.userId}`)}
+                          className="text-gray-300 hover:underline"
+                        >
+                          {comment.username}
+                        </button>
                       </div>
                       <span className="text-gray-400 text-sm">
                         {new Date(comment.date).toLocaleString(undefined, {
