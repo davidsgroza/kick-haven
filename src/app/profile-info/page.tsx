@@ -15,10 +15,16 @@ const ProfileInfoPage = () => {
     location: "",
     birthdate: "",
     email: "",
-    username: "",
   });
 
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Track if the form is being submitted
+  const [originalData, setOriginalData] = useState({
+    bio: "",
+    location: "",
+    birthdate: "",
+    email: "",
+  });
 
   useEffect(() => {
     if (status === "loading") return;
@@ -40,7 +46,6 @@ const ProfileInfoPage = () => {
           const response = await fetch("/api/profile-info", {
             method: "GET",
             headers: {
-              // Assuming session.user.name is being passed, or if you're using email, pass session.user.email
               Authorization: `Bearer ${session.user.name || ""}`, // Adjust as per your session object
             },
           });
@@ -55,8 +60,8 @@ const ProfileInfoPage = () => {
             location: data.location || "",
             birthdate: data.birthdate || "",
             email: data.email || "",
-            username: data.username || "",
           });
+          setOriginalData(data); // Save the original data for comparison
         } catch (err) {
           console.error(err);
           setError("Failed to load user profile data.");
@@ -68,7 +73,31 @@ const ProfileInfoPage = () => {
   }, [session, status, router]);
 
   if (status === "loading") {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center mt-10">
+        {/* Spinner copied from Dashboard */}
+        <svg
+          className="animate-spin h-8 w-8 text-blue-600"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8H4z"
+          />
+        </svg>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
@@ -87,19 +116,33 @@ const ProfileInfoPage = () => {
 
     // Clear any previous errors
     setError(null);
+    setIsSubmitting(true); // Set submitting state to true
 
     // Ensure session exists before submitting
     if (!session?.user) {
       setError("User session is not available.");
+      setIsSubmitting(false); // Reset submitting state
       return;
     }
 
-    // Prepare data for submission
-    const updatedData = {
-      ...formData,
-      currentUsername: session.user?.name || "", // Safely access session username
+    // Prepare data for submission. Only send fields that have changed
+    const updatedData: { [key: string]: unknown } = {
+      currentUsername: session.user?.name || "",
     };
-    console.log(updatedData); // Log the data being sent to the backend
+
+    // Compare formData with originalData and only send changed fields
+    if (formData.email !== originalData.email) {
+      updatedData.email = formData.email;
+    }
+    if (formData.bio !== originalData.bio) {
+      updatedData.bio = formData.bio;
+    }
+    if (formData.location !== originalData.location) {
+      updatedData.location = formData.location;
+    }
+    if (formData.birthdate !== originalData.birthdate) {
+      updatedData.birthdate = formData.birthdate;
+    }
 
     try {
       const response = await fetch("/api/profile-info", {
@@ -113,14 +156,16 @@ const ProfileInfoPage = () => {
       if (!response.ok) {
         const errorMessage = await response.text();
         setError(errorMessage || "Something went wrong");
+        setIsSubmitting(false); // Reset submitting state
         return;
       }
 
       alert("Profile updated successfully");
       router.push("/dashboard");
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
-      console.error(err);
       setError("Failed to update profile. Please try again.");
+      setIsSubmitting(false); // Reset submitting state
     }
   };
 
@@ -136,26 +181,6 @@ const ProfileInfoPage = () => {
           >
             {/* Display error message if error exists */}
             {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
-
-            {/* Username */}
-            <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-gray-300"
-              >
-                Username
-              </label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleInputChange}
-                className="mt-1 p-3 w-full bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-                placeholder="Enter your username"
-                required
-              />
-            </div>
 
             {/* Email */}
             <div>
@@ -233,12 +258,39 @@ const ProfileInfoPage = () => {
               />
             </div>
 
+            {/* Submit Button */}
             <div className="mt-6">
               <button
                 type="submit"
                 className="w-full p-3 bg-blue-500 rounded-md text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isSubmitting} // Disable button while submitting
               >
-                Save Changes
+                {isSubmitting ? (
+                  <div className="flex justify-center items-center">
+                    <svg
+                      className="animate-spin h-8 w-8 text-blue-600"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8H4z"
+                      />
+                    </svg>
+                  </div>
+                ) : (
+                  "Save Changes"
+                )}
               </button>
             </div>
           </form>

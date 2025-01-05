@@ -30,6 +30,7 @@ interface Post {
   locked: boolean;
   userVote: "upvote" | "downvote" | null;
   profileImage?: string;
+  forumSignature?: string;
 }
 
 interface Comment {
@@ -43,6 +44,7 @@ interface Comment {
   downvotes: number;
   userVote: "upvote" | "downvote" | null;
   profileImage?: string;
+  forumSignature?: string;
 }
 
 interface Category {
@@ -511,8 +513,19 @@ const PostPage = () => {
         ReactPlayer.canPlay(href) && href.includes("spotify.com");
       const isSoundCloud =
         ReactPlayer.canPlay(href) && href.includes("soundcloud.com");
+      const isBandCamp =
+        ReactPlayer.canPlay(href) && href.includes("bandcamp.com");
+      const isVimeo = ReactPlayer.canPlay(href) && href.includes("vimeo.com");
 
-      if (isYouTube || isSpotify || isSoundCloud) {
+      if (isYouTube || isVimeo || isSpotify) {
+        return (
+          <div className="my-4">
+            <ReactPlayer url={href} controls width="100%" />
+          </div>
+        );
+      }
+
+      if (isSoundCloud || isBandCamp) {
         return (
           <div className="my-4">
             <ReactPlayer url={href} controls width="100%" />
@@ -532,6 +545,25 @@ const PostPage = () => {
         </a>
       );
     },
+  };
+
+  // Render the forum signature below post and comment
+  const renderForumSignature = (signature: string | undefined) => {
+    if (!signature) return null;
+
+    // Only show SoundCloud and BandCamp links, using ReactPlayer
+    const isSoundCloud = signature.includes("soundcloud.com");
+    const isBandCamp = signature.includes("bandcamp.com");
+
+    return (
+      <div className="mt-4">
+        {isSoundCloud || isBandCamp ? (
+          <ReactPlayer url={signature} controls width="100%" height="75px" />
+        ) : (
+          <p>{signature}</p>
+        )}
+      </div>
+    );
   };
 
   // Sanitize the post text
@@ -691,6 +723,8 @@ const PostPage = () => {
                 Locked
               </span>
             )}
+            {/* Forum Signature */}
+            {renderForumSignature(post.forumSignature)}
           </article>
 
           {/* Comment Section */}
@@ -906,6 +940,8 @@ const PostPage = () => {
                         Report
                       </button>
                     </div>
+                    {/* Forum Signature */}
+                    {renderForumSignature(comment.forumSignature)}
                   </li>
                 ))}
               </ul>

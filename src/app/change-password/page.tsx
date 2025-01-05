@@ -2,14 +2,13 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Sidebar from "../components/Sidebar"; // Import Sidebar component
+import Sidebar from "../components/Sidebar";
 
 const ChangePasswordPage = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  // Form data state
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -20,25 +19,47 @@ const ChangePasswordPage = () => {
 
   useEffect(() => {
     if (status === "loading") {
-      return; // Do nothing while session is loading
+      return;
     }
 
     if (!session) {
-      router.push("/login"); // Redirect to login if no session
+      router.push("/login");
     } else {
-      setIsAuthenticated(true); // Set to true when user is authenticated
+      setIsAuthenticated(true);
     }
   }, [session, status, router]);
 
   if (status === "loading") {
-    return <div>Loading...</div>; // Loading state
+    return (
+      <div className="flex justify-center items-center w-full h-screen">
+        <svg
+          className="animate-spin h-8 w-8 text-blue-600"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8H4z"
+          />
+        </svg>
+      </div>
+    );
   }
 
   if (!isAuthenticated || !session?.user?.name) {
-    return null; // Prevent rendering while redirect is happening
+    return null;
   }
 
-  // Handle form data change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -47,7 +68,6 @@ const ChangePasswordPage = () => {
     }));
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -56,25 +76,18 @@ const ChangePasswordPage = () => {
       return;
     }
 
-    // Ensure session is loaded and user exists
-    if (!session || !session.user) {
-      setError("User not authenticated.");
-      return;
-    }
-
-    setError(null); // Reset error if passwords match
+    setError(null);
 
     try {
       const response = await fetch("/api/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.user.name || ""}`, // Send session token here
+          Authorization: `Bearer ${session.user.name}`, // Send session token here
         },
         body: JSON.stringify({
           currentPassword: formData.currentPassword,
           newPassword: formData.newPassword,
-          confirmNewPassword: formData.confirmNewPassword,
         }),
       });
 
@@ -82,7 +95,7 @@ const ChangePasswordPage = () => {
 
       if (response.ok) {
         alert("Password changed successfully!");
-        router.push("/dashboard"); // Redirect to dashboard on success
+        router.push("/dashboard");
       } else {
         setError(data.error || "Something went wrong");
       }
@@ -95,7 +108,6 @@ const ChangePasswordPage = () => {
   return (
     <main className="min-h-screen bg-gray-900 text-white flex justify-center py-10">
       <div className="w-full max-w-4xl flex gap-8">
-        {/* Left side (Main Content) */}
         <div className="flex-1 bg-gray-800 p-6 rounded-lg space-y-6">
           <h1 className="text-4xl font-semibold mb-8">Change Password</h1>
 
@@ -103,9 +115,7 @@ const ChangePasswordPage = () => {
             onSubmit={handleSubmit}
             className="bg-gray-800 p-6 rounded-lg space-y-6"
           >
-            {error && (
-              <p className="text-red-500 text-sm">{error}</p> // Display error message here
-            )}
+            {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div>
               <label
@@ -175,7 +185,6 @@ const ChangePasswordPage = () => {
           </form>
         </div>
 
-        {/* Right side (Sidebar) */}
         <Sidebar />
       </div>
     </main>

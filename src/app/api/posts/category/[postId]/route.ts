@@ -44,8 +44,7 @@ interface Post {
   sticky: boolean;
   locked: boolean;
 }
-
-// GET: Fetch a specific post by ID with user profile image
+// GET: Fetch a specific post by ID with user profile image and forum signature
 export async function GET(
   request: Request,
   { params }: { params: { postId: string } }
@@ -85,6 +84,23 @@ export async function GET(
             preserveNullAndEmptyArrays: true,
           },
         },
+        {
+          // Add the profile image to the post object
+          $addFields: {
+            profileImage: {
+              $cond: {
+                if: { $eq: ["$userDetails.profileImage", null] },
+                then: "/icon.jpg", // Default image if no profile image
+                else: {
+                  $concat: [
+                    "/api/user/profile-image/",
+                    { $toString: "$userDetails._id" },
+                  ],
+                },
+              },
+            },
+          },
+        },
       ])
       .toArray();
 
@@ -93,18 +109,29 @@ export async function GET(
     }
 
     const serializedPost = post[0];
+    const userId = serializedPost.userId.toString();
 
-    // Use the userId to generate the profile image URL
-    const profileImageUrl = `/api/user/profile-image/${serializedPost.userId.toString()}`;
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
+    //  fetch call with the full URL
+    const forumSignatureResponse = await fetch(
+      `${baseUrl}/api/forum-signature/${userId}`
+    );
+    const forumSignatureData = await forumSignatureResponse.json();
+
+    const profileImageUrl = `/api/user/profile-image/${userId}`;
+
+    // Combine everything into the responsePost object
     const responsePost = {
       ...serializedPost,
       _id: serializedPost._id.toString(),
-      userId: serializedPost.userId.toString(),
+      userId: userId,
       parentPostId: serializedPost.parentPostId?.toString() || null,
       profileImage: profileImageUrl, // Use the generated URL for the profile image
+      forumSignature: forumSignatureData.forumSignature || "", // Add the forum signature
     };
 
+    console.log(responsePost);
     return NextResponse.json(responsePost, { status: 200 });
   } catch (err: unknown) {
     console.error("Error fetching post:", err);

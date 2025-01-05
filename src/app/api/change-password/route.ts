@@ -8,20 +8,30 @@ import { NextRequest } from "next/server";
 const passwordSchema = z.object({
   currentPassword: z.string().min(8),
   newPassword: z.string().min(8),
-  username: z.string().min(5).max(20),
 });
 
 export async function POST(request: NextRequest) {
   try {
     // Parse and validate the request body
     const requestBody = await request.json();
-    const { currentPassword, newPassword, username } =
-      passwordSchema.parse(requestBody);
+    const { currentPassword, newPassword } = passwordSchema.parse(requestBody);
+
+    // Extract username from the Authorization header
+    const headers = Object.fromEntries(request.headers.entries());
+    const authorizationHeader = headers["authorization"];
+    const [bearer, username] = authorizationHeader?.split(" ") || [];
+
+    if (bearer !== "Bearer" || !username) {
+      return NextResponse.json(
+        { message: "Unauthorized. Invalid Authorization header." },
+        { status: 401 }
+      );
+    }
 
     // Connect to the database
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
-    console.log(requestBody);
+
     // Fetch user from the database by username
     const user = await db.collection("users").findOne({ username });
 
@@ -34,7 +44,6 @@ export async function POST(request: NextRequest) {
       currentPassword,
       user.password
     );
-    console.log(isPasswordValid);
     if (!isPasswordValid) {
       return NextResponse.json(
         { message: "Invalid current password" },

@@ -7,14 +7,12 @@ const profileSchema = z.object({
   bio: z.string().max(500).optional(),
   location: z.string().max(100).optional(),
   birthdate: z.string().optional(),
-  email: z.string().email(),
-  username: z.string().min(5).max(20),
-  currentUsername: z.string().min(5).max(20), // Include the current username
+  email: z.string().email().optional(), // email is optional but needs to be validated
+  currentUsername: z.string().min(5).max(20), // currentUsername cannot be changed
 });
 
 // GET method to retrieve user profile
 export async function GET(request: NextRequest) {
-  console.log("GET request reached");
   try {
     // Convert the NextRequest headers to a plain object
     const headers = Object.fromEntries(request.headers.entries());
@@ -41,7 +39,7 @@ export async function GET(request: NextRequest) {
     // Connect to the database
     const client = await connectToDatabase();
     const db = client.db("kick-haven-local");
-    console.log(userName);
+
     // Fetch the user profile data by the username
     const user = await db.collection("users").findOne({ username: userName });
 
@@ -49,10 +47,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    // Return the user's profile data (excluding password)
-    const { username, email, bio, birthdate, location } = user;
-    const userProfile = { username, email, bio, birthdate, location };
-    console.log(userProfile);
+    // Return the user's profile data (excluding username, as it cannot be changed)
+    const { email, bio, birthdate, location } = user;
+    const userProfile = { email, bio, birthdate, location };
+
     return NextResponse.json(userProfile);
   } catch (error) {
     return NextResponse.json(
@@ -68,7 +66,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   try {
     const requestBody = await request.json();
-    const parsedData = profileSchema.parse(requestBody);
+    const parsedData = profileSchema.parse(requestBody); // Parse incoming data
 
     // Connect to the database
     const client = await connectToDatabase();
@@ -83,40 +81,50 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    // Check if the new username is already taken
-    const existingUser = await db.collection("users").findOne({
-      username: parsedData.username,
-    });
-    if (existingUser) {
+    // Prepare the updated fields
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updatedFields: any = {};
+
+    // Only update the fields if they are provided
+    if (parsedData.email) {
+      updatedFields.email = parsedData.email;
+    }
+    if (parsedData.bio) {
+      updatedFields.bio = parsedData.bio;
+    }
+    if (parsedData.location) {
+      updatedFields.location = parsedData.location;
+    }
+    if (parsedData.birthdate) {
+      updatedFields.birthdate = parsedData.birthdate;
+    }
+
+    // Perform the update if there are any fields to update
+    if (Object.keys(updatedFields).length > 0) {
+      const result = await db.collection("users").updateOne(
+        { username: parsedData.currentUsername },
+        {
+          $set: {
+            ...updatedFields,
+            updatedAt: new Date(),
+          },
+        }
+      );
+
+      if (result.modifiedCount === 0) {
+        return NextResponse.json(
+          { message: "Failed to update profile" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ message: "Profile updated successfully" });
+    } else {
       return NextResponse.json(
-        { message: "Username is already taken" },
+        { message: "No changes to update" },
         { status: 400 }
       );
     }
-
-    // Update the user's profile
-    const result = await db.collection("users").updateOne(
-      { username: parsedData.currentUsername },
-      {
-        $set: {
-          bio: parsedData.bio,
-          location: parsedData.location,
-          birthdate: parsedData.birthdate,
-          email: parsedData.email,
-          username: parsedData.username, // Update username
-          updatedAt: new Date(),
-        },
-      }
-    );
-
-    if (result.modifiedCount === 0) {
-      return NextResponse.json(
-        { message: "Failed to update profile" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ message: "Profile updated successfully" });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Internal error" },

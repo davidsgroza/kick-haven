@@ -133,7 +133,7 @@ export async function GET(
           $limit: limit,
         },
         {
-          // Join with users collection to get user profile image
+          // Join with users collection to get user profile image and forum signature
           $lookup: {
             from: "users",
             localField: "userId",
@@ -148,7 +148,7 @@ export async function GET(
           },
         },
         {
-          // Add the profile image URL to the comment object
+          // Add the profile image and forum signature to the comment object
           $addFields: {
             profileImageUrl: {
               $cond: {
@@ -162,18 +162,20 @@ export async function GET(
                 },
               },
             },
+            forumSignature: "$userDetails.forumSignature", // Fetch the forum signature
           },
         },
       ])
       .toArray();
 
-    // Serialize comments and add profile image URL
+    // Serialize comments and add profile image URL and forum signature
     const serializedComments = comments.map((comment) => ({
       ...comment,
       _id: comment._id.toString(),
       parentPostId: comment.parentPostId.toString(),
       userId: comment.userId.toString(),
       profileImage: comment.profileImageUrl,
+      forumSignature: comment.forumSignature, // Include forum signature
     }));
 
     return NextResponse.json(serializedComments, { status: 200 });
