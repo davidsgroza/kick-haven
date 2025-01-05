@@ -1,5 +1,3 @@
-// src/utils/mongo.ts
-
 import { MongoClient, ServerApiVersion } from "mongodb";
 
 // Connection URI
@@ -19,7 +17,7 @@ if (!uri) {
 }
 
 if (process.env.NODE_ENV === "development") {
-  // In development mode, reuse the global promise to prevent multiple connections
+  // Reuse the global promise to prevent multiple connections
   if (!globalThis.hasOwnProperty("_mongoClientPromise")) {
     const client = new MongoClient(uri, options);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -28,9 +26,8 @@ if (process.env.NODE_ENV === "development") {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   clientPromise = (globalThis as any)._mongoClientPromise; // Use the existing promise
 } else {
-  // In production mode, create a new MongoClient for each request
   const client = new MongoClient(uri, options);
-  clientPromise = client.connect(); // Connect for production
+  clientPromise = client.connect();
 }
 
 // Function to connect to the database

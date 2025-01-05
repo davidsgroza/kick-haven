@@ -19,3 +19,46 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Quill toolbar formatting */
+.my-custom-quill .ql-toolbar.ql-snow {
+  background-color: #0d63f8;
+}
+
+.my-custom-quill .ql-toolbar.ql-snow button {
+  color: #0c1724;
+  background-color: #5090fe;
+}
+
+.my-custom-quill .ql-toolbar.ql-snow button:hover {
+  background-color: #003a9f;
+}
+
+.my-custom-quill .ql-toolbar.ql-snow button svg {
+  stroke: #14b8a6;
+}
+
+.my-custom-quill .ql-toolbar.ql-snow button .ql-fill {
+  fill: #14b8a6;
+}
+
+/* The main heading dropdown area */
+.my-custom-quill .ql-snow .ql-toolbar .ql-picker.ql-header {
+  background-color: #2a303b; /* text background */
+  color: #ce9595; /* text color */
+}
+
+/* The label (the visible "button" part) */
+.my-custom-quill .ql-snow .ql-toolbar .ql-picker.ql-header .ql-picker-label {
+  background-color: #2d3748;
+  color: #205b9a;
+}
+
+/* Hover state for the label */
+.my-custom-quill
+  .ql-snow
+  .ql-toolbar
+  .ql-picker.ql-header
+  .ql-picker-label:hover {
+  background-color: #1a202c;
+}

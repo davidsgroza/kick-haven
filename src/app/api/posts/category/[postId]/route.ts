@@ -166,11 +166,11 @@ export async function PUT(
   }
 
   try {
-    const { title, text, categoryId } = await request.json();
+    const { title, text } = await request.json();
 
-    if (!title || !text || !categoryId) {
+    if (!title || !text) {
       return NextResponse.json(
-        { error: "All fields are required." },
+        { error: "Title and text are required." },
         { status: 400 }
       );
     }
@@ -193,14 +193,13 @@ export async function PUT(
       );
     }
 
-    // Update post
+    // Update post without changing category
     await posts.updateOne(
       { _id: new ObjectId(postId) },
       {
         $set: {
           title: title.trim(),
           text: text.trim(),
-          categoryId: categoryId,
         },
       }
     );
