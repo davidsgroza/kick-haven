@@ -79,7 +79,7 @@ interface Comment {
 
 type Post = ParentPost | Comment;
 
-// GET: Fetch comments with pagination and sorting
+// GET: Fetch comments with pagination, sorting, and user profile image
 export async function GET(
   request: Request,
   { params }: { params: { parentPostId: string } }
@@ -109,7 +109,7 @@ export async function GET(
     // Comments collection
     const postsCollection = db.collection<Post>("posts");
 
-    // Fetch comments with dynamic sorting, including net score calculation
+    // Fetch comments with dynamic sorting and user profile image
     const comments = await postsCollection
       .aggregate([
         {
@@ -124,7 +124,7 @@ export async function GET(
           },
         },
         {
-          $sort: sortOrder, // Apply dynamic sorting (netScore and date)
+          $sort: sortOrder, // Apply dynamic sorting
         },
         {
           $skip: (page - 1) * limit,
@@ -132,15 +132,48 @@ export async function GET(
         {
           $limit: limit,
         },
+        {
+          // Join with users collection to get user profile image
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userDetails",
+          },
+        },
+        {
+          $unwind: {
+            path: "$userDetails",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          // Add the profile image URL to the comment object
+          $addFields: {
+            profileImageUrl: {
+              $cond: {
+                if: { $eq: ["$userDetails.profileImage", null] },
+                then: "/icon.jpg", // Default image if no profile image
+                else: {
+                  $concat: [
+                    "/api/user/profile-image/",
+                    { $toString: "$userDetails._id" },
+                  ],
+                },
+              },
+            },
+          },
+        },
       ])
       .toArray();
 
-    // Serialize comments
+    // Serialize comments and add profile image URL
     const serializedComments = comments.map((comment) => ({
       ...comment,
       _id: comment._id.toString(),
       parentPostId: comment.parentPostId.toString(),
       userId: comment.userId.toString(),
+      profileImage: comment.profileImageUrl,
     }));
 
     return NextResponse.json(serializedComments, { status: 200 });

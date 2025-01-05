@@ -1,4 +1,3 @@
-// app/components/Sidebar.tsx
 "use client";
 
 import { useSession } from "next-auth/react";
@@ -20,23 +19,22 @@ const Sidebar = () => {
   // Fetch the user's profile image from the server
   useEffect(() => {
     const fetchProfileImage = async () => {
-      if (!session?.user?.email) return;
+      if (!session?.user?.id) return; // Ensure the user ID is available
       try {
-        const response = await axios.get("/api/user/profile-image", {
-          responseType: "blob",
-        });
-        const imageUrl = URL.createObjectURL(response.data); // Create a URL for the blob
-        setProfileImage(imageUrl); // Set the image URL
+        // Fetch the user's profile image from the server using the user ID
+        const imageUrl = `/api/user/profile-image/${session.user.id}`;
+        setProfileImage(imageUrl);
       } catch (error) {
         console.error("Error fetching profile image:", error);
         setProfileImage("/icon.jpg"); // Fallback to default icon
+        setError("Failed to load profile image.");
       }
     };
 
     fetchProfileImage();
-  }, [session]);
+  }, [session]); // Re-fetch when the session changes
 
-  // Handle file selection
+  // Handle file selection for profile picture upload
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -52,9 +50,9 @@ const Sidebar = () => {
       return;
     }
 
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 4 * 1024 * 1024; // 4MB
     if (file.size > maxSize) {
-      setError("File size must be less than 2MB.");
+      setError("File size must be less than 4MB.");
       return;
     }
 
@@ -63,20 +61,18 @@ const Sidebar = () => {
 
     try {
       setUploading(true);
-      const response = await axios.post(
-        "/api/user/upload-profile-image",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axios.post("/api/user/profile-image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (response.data.success) {
-        await update(); // Update session to reflect the new image
-        setProfileImage(null);
         setSuccess("Image uploaded successfully!");
+        // Update the profile image state after uploading
+        const updatedProfileImage = URL.createObjectURL(file);
+        setProfileImage(updatedProfileImage); // Immediately reflect the uploaded image
+        await update(); // Update session to reflect the new image
       } else {
         setError(response.data.message || "Failed to upload image.");
       }
@@ -117,15 +113,18 @@ const Sidebar = () => {
 
   return (
     <aside className="w-60 bg-gray-800 p-6 rounded-lg shadow-lg space-y-4">
-      <div className="flex items-center space-x-4 mb-6">
+      <div className="flex flex-col items-center mb-6">
         <div className="relative">
-          <Image
-            src={profileImage || "/icon.jpg"}
-            alt="Profile Picture"
-            width={200}
-            height={200}
-            className="rounded-full object-cover"
-          />
+          <div className="rounded-full overflow-hidden w-44 h-44 border-4 border-gray-700 shadow-md transition-transform transform hover:scale-105">
+            <Image
+              src={profileImage || "/icon.jpg"}
+              alt="Profile Picture"
+              width={200}
+              height={200}
+              className="object-cover w-full h-full"
+              unoptimized // Prevents Next.js image optimization
+            />
+          </div>
           <div className="absolute bottom-0 left-0 right-0 flex justify-center space-x-4 bg-gray-800/70 py-2 rounded-b-full">
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -138,7 +137,6 @@ const Sidebar = () => {
               onClick={handleDeleteProfilePicture}
               className="text-white bg-red-200 hover:bg-red-300 p-2 rounded-full transition"
               title="Delete Picture"
-              disabled={deleting}
             >
               ❌
             </button>

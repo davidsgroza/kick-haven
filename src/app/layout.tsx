@@ -1,7 +1,6 @@
 import localFont from "next/font/local";
 import React from "react";
 import Link from "next/link";
-import "react-quill/dist/quill.snow.css"; // Import React-Quill component
 import "./globals.css";
 import { Metadata } from "next";
 import Navbar from "@/app/components/Navbar"; // Import Navbar component
